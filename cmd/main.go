@@ -28,7 +28,8 @@ func run() {
 
 	// Add Linux Namespace
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
+		Cloneflags:   syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+		Unshareflags: syscall.CLONE_NEWNS,
 	}
 
 	cmd.Run()
@@ -38,6 +39,9 @@ func child() {
 	fmt.Printf("Sticky running %v with pid: %d\n", os.Args[2:], os.Getpid())
 
 	syscall.Sethostname([]byte("container"))
+	syscall.Chroot("/sticky/ubuntu-fs")
+	syscall.Chdir("/")
+	syscall.Mount("proc", "proc", "proc", 0, "")
 
 	cmd := exec.Command(os.Args[2], os.Args[3:]...)
 	// Remap IO
