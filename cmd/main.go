@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strconv"
 	"syscall"
 )
 
@@ -50,6 +53,20 @@ func child() {
 	cmd.Stderr = os.Stderr
 
 	cmd.Run()
+}
+
+func cg() {
+	cgroups := "sys/fs/cgroup/"
+	pids := filepath.Join(cgroups, "pids")
+	err := os.Mkdir(filepath.Join(pids, "sticky"), 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+
+	must(ioutil.WriteFile(filepath.Join(pids, "sticky/pids.max"), []byte("20"), 0700))
+	// Removes the cgroup after exist
+	must(ioutil.WriteFile(filepath.Join(pids, "sticky/notify_on_release"), []byte("1"), 0700))
+	must(ioutil.WriteFile(filepath.Join(pids, "sticky/cgroup.procs"), []byte(strconv.Itoa(os.Getpid())), 0700))
 }
 
 func must(err error) {
